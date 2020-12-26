@@ -165,6 +165,9 @@
 (define (char-ci-hash obj)
   (modulo (* (%salt%) (char->integer (char-foldcase obj))) (hash-bound)))
 
+;; This does a lousy job of hashing, and isn't even portable R7RS,
+;; so it's commented out.
+#;
 (define (number-hash obj)
   (cond
     ((nan? obj) (%salt%))
@@ -173,17 +176,25 @@
     ((real? obj) (abs (exact (round obj))))
     (else (+ (number-hash (real-part obj)) (number-hash (imag-part obj))))))
 
+(define (number-hash obj) (equal-hash obj))
+
 ;; Lexicographic ordering of complex numbers
 (define (complex<? a b)
   (if (= (real-part a) (real-part b))
     (< (imag-part a) (imag-part b))
     (< (real-part a) (real-part b))))
 
+;;; Use string-ci-hash from (rnrs hashtables) instead.
+
+#;
 (define (string-ci-hash obj)
-    (string-hash (string-foldcase obj)))
+  (string-hash (string-foldcase obj)))
 
 (define (symbol<? a b) (string<? (symbol->string a) (symbol->string b)))
 
+;;; Use symbol-hash from (rnrs hashtables) instead.
+
+#;
 (define (symbol-hash obj)
   (string-hash (symbol->string obj)))
 
@@ -359,6 +370,9 @@
           ((= n len) (acc))
           (else (acc (elem-hash (ref obj n))) (loop (+ n 1))))))))
 
+;;; Use string-hash from (rnrs hashtables) instead.
+
+#;
 (define (string-hash obj)
   (let ((acc (make-hasher))
         (len (string-length obj)))
@@ -366,4 +380,3 @@
       (cond
         ((= n len) (acc))
         (else (acc (char->integer (string-ref obj n))) (loop (+ n 1)))))))
-

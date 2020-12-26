@@ -57,9 +57,48 @@
 (define fl<=? (flonum-restricted <= 'fl<=?))
 (define fl>=? (flonum-restricted >= 'fl>=?))
 
-(define flinteger? (flonum-restricted1 integer? 'flinteger?))
-(define flzero? (flonum-restricted1 zero? 'flzero?))
-(define flpositive? (flonum-restricted1 positive? 'flpositive?))
+;;; For the next three procedures, there is a question concerning
+;;; their behavior in -r7strict mode, where 0.0 and -0.0 are not
+;;; exactly zero and are positive.
+;;; These procedures are not (yet) part of R7RS, and the R6RS is
+;;; not relevant to -r7strict mode, so SRFI 144 is the only
+;;; relevant standard at this time.
+;;;
+;;; SRFI 144 says fl=?, fl<?, fl>?, fl<=?, and fl>=? should behave
+;;; like C99 =, <, >, <=, and >=, which doesn't decide the question
+;;; but may provide a hint concerning flzero? and flpositive?.
+;;; SRFI 144 says flzero? tests whether its argument is zero, but
+;;; doesn't say the test is against exact 0 or (flonum 0); we can
+;;; interpret it to mean the latter.  Similarly for flpositive?.
+;;; SRFI 144 says flinteger? tests whether its argument is an
+;;; "integral flonum", which doesn't decide the question but we can
+;;; interpret it to mean it tests to see whether its argument is
+;;; equal to the round of its argument, as in IEEE-754 arithmetic.
+;;;
+;;; We rely on the Principle of Least Astonishment:
+;;; Those interpretations are likely to be more consistent with
+;;; programmers' expectations for flonum arithmetic than the
+;;; interpretation that makes the three procedures behave like
+;;; their generic counterparts.
+;;; Those interpretations are also consistent with the compiler
+;;; tables that generate inline code for calls to these procedures.
+;;;
+;;; See also the definition of flceiling.
+
+;(define flinteger? (flonum-restricted1 integer? 'flinteger?))
+;(define flzero? (flonum-restricted1 zero? 'flzero?))
+;(define flpositive? (flonum-restricted1 positive? 'flpositive?))
+
+(define flinteger?
+  (flonum-restricted1 (lambda (x) (= x (flround x)))
+                      'flinteger?))
+(define flzero?
+  (flonum-restricted1 (lambda (x) (fl=? x 0.0))
+                      'flzero?))
+(define flpositive?
+  (flonum-restricted1 (lambda (x) (fl>? x 0.0))
+                      'flpositive?))
+
 (define flnegative? (flonum-restricted1 negative? 'flnegative?))
 (define flodd? (flonum-restricted1 odd? 'flodd?))
 (define fleven? (flonum-restricted1 even? 'fleven?))
@@ -87,15 +126,45 @@
 ; FIXME: The numerator and denominator procedures are
 ; defined in Lib/Common/ratnums.sch, which isn't loaded
 ; until later.
+;
+; The special casing of 0.0 is for SRFI 144 in -r7strict mode.
 
 (define flnumerator
-  (flonum-restricted1 (lambda (x) (numerator x)) 'flnumerator))
+  (flonum-restricted1 (lambda (x)
+                        (cond ((flnan? x)
+                               x)
+                              ((= x 0.0)
+                               x)
+                              (else
+                               (numerator x))))
+                      'flnumerator))
 
 (define fldenominator
-  (flonum-restricted1 (lambda (x) (denominator x)) 'fldenominator))
+  (flonum-restricted1 (lambda (x)
+                        (cond ((flnan? x)
+                               x)
+                              ((= x 0.0)
+                               1.0)
+                              (else
+                               (denominator x))))
+                      'fldenominator))
 
 (define flfloor (flonum-restricted1 floor 'flfloor))
-(define flceiling (flonum-restricted1 ceiling 'flceiling))
+
+;;; See earlier discussion of -r7strict mode.
+
+;(define flceiling (flonum-restricted1 ceiling 'flceiling))
+
+(define flceiling
+  (flonum-restricted1 (lambda (x)
+                        (if (< x 0.0)
+                            (truncate x)
+                            (let ((g (truncate x)))
+                              (if (not (= g x))
+                                  (+ g 1.0)
+                                  g))))
+                      'flceiling))
+
 (define fltruncate (flonum-restricted1 truncate 'fltruncate))
 (define flround (flonum-restricted1 round 'flround))
 
@@ -155,3 +224,30 @@
 (define (fixnum->flonum n)
   (fx:check! 'fixnum->flonum n)
   (+ n 0.0))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; New for R7RS Orange Edition
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (fl+* x y z)
+  (cond ((and (flonum? x) (flonum? y) (flonum? z))
+         (flonum:fma x y z))
+        (else
+         (fl:check-args! 'fl+* (list x y z)))))
+
+(define (flfirst-bessel n x)
+  (cond ((and (fixnum? n) (flonum? x))
+         (flonum:jn n x))
+        (else
+	 (fx:check! 'flfirst-bessel n)
+	 (fl:check! 'flfirst-bessel x))))
+
+(define (flsecond-bessel n x)
+  (cond ((and (fixnum? n) (flonum? x))
+         (flonum:yn n x))
+        (else
+	 (fx:check! 'flsecond-bessel n)
+	 (fl:check! 'flsecond-bessel x))))
+

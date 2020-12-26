@@ -179,7 +179,14 @@
         (error "Can't convert " f " to an exact number."))
     (let ((q (let* ((m (float-significand f))
                     (e (float-unbiased-exponent f)))
-               (cond ((>= e 52)
+               (cond ((and (zero? m) (= e -1022))
+                      (if (not (eq? 'extremely (larceny:r7strict)))
+                          0
+                          (let ((r (exact-value-of-inexact-zero)))
+                            (if (zero? (float-sign f))
+                                r
+                                (- r)))))
+                     ((>= e 52)
                       (* m (expt 2 (- e 52))))
                      (else
                       (/ m (expt 2 (abs (- e 52)))))))))
@@ -203,47 +210,66 @@
 
   'flonums)
 
+; If (larceny:r7strict) is 'extremely, the IEEE-754 representations
+; of 0.0 and -0.0 represent a small positive number.
+
+(define (exact-value-of-inexact-zero)
+  (if (not exact-ratnum-value-of-inexact-zero)
+      (set! exact-ratnum-value-of-inexact-zero (/ 1 (expt 10 999))))
+  exact-ratnum-value-of-inexact-zero)
+
+(define exact-ratnum-value-of-inexact-zero #f) ; #f or #e1e-999
+
 ; No type checking, as these are not public.
 
 (define (flonum:log x)
-  (syscall syscall:flonum-log x (make-flonum-datum)))
+  (%syscall syscall:flonum-log x (make-flonum-datum)))
 
 (define (flonum:exp x)
-  (syscall syscall:flonum-exp x (make-flonum-datum)))
+  (%syscall syscall:flonum-exp x (make-flonum-datum)))
 
 (define (flonum:sin x)
-  (syscall syscall:flonum-sin x (make-flonum-datum)))
+  (%syscall syscall:flonum-sin x (make-flonum-datum)))
 
 (define (flonum:cos x)
-  (syscall syscall:flonum-cos x (make-flonum-datum)))
+  (%syscall syscall:flonum-cos x (make-flonum-datum)))
 
 (define (flonum:tan x)
-  (syscall syscall:flonum-tan x (make-flonum-datum)))
+  (%syscall syscall:flonum-tan x (make-flonum-datum)))
 
 (define (flonum:asin x)
-  (syscall syscall:flonum-asin x (make-flonum-datum)))
+  (%syscall syscall:flonum-asin x (make-flonum-datum)))
 
 (define (flonum:acos x)
-  (syscall syscall:flonum-acos x (make-flonum-datum)))
+  (%syscall syscall:flonum-acos x (make-flonum-datum)))
 
 (define (flonum:atan x)
-  (syscall syscall:flonum-atan x (make-flonum-datum)))
+  (%syscall syscall:flonum-atan x (make-flonum-datum)))
 
 (define (flonum:atan2 x y)
-  (syscall syscall:flonum-atan2 x y (make-flonum-datum)))
+  (%syscall syscall:flonum-atan2 x y (make-flonum-datum)))
 
 (define (flonum:sqrt x)
-  (syscall syscall:flonum-sqrt x (make-flonum-datum)))
+  (%syscall syscall:flonum-sqrt x (make-flonum-datum)))
 
 (define (flonum:sinh x)
-  (syscall syscall:flonum-sinh x (make-flonum-datum)))
+  (%syscall syscall:flonum-sinh x (make-flonum-datum)))
 
 (define (flonum:cosh x)
-  (syscall syscall:flonum-cosh x (make-flonum-datum)))
+  (%syscall syscall:flonum-cosh x (make-flonum-datum)))
+
+(define (flonum:fma x y z)
+  (%syscall syscall:flonum-fma x y z (make-flonum-datum)))
+
+(define (flonum:jn n x)
+  (%syscall syscall:flonum-jn n x (make-flonum-datum)))
+
+(define (flonum:yn n x)
+  (%syscall syscall:flonum-yn n x (make-flonum-datum)))
 
 ; FIXME:  This seems out of place.
 
 (define (flonum:time)
-  (syscall syscall:time (make-flonum-datum)))
+  (%syscall syscall:time (make-flonum-datum)))
 
 ; eof

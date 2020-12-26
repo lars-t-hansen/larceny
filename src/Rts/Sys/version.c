@@ -29,8 +29,9 @@
  *  General Ripper              0.98b1      21 Oct 2011     fcbaf3b
  *                              0.98         7 Mar 2015     60876f5
  *  Goldie                      0.99        25 May 2016     4671a1f
- *  Grain Alcohol and Rainwater
+ *  Grain Alcohol and Rainwater 1.3          6 Aug 2017     567b862
  *  Group Commander Mandrake
+ *  Hair Mussed
  *  Hi There!
  *  Horsing Around
  *  Ignorant Peons
@@ -69,9 +70,9 @@
 #include "config.h"
 
 int  larceny_major_version = 1;
-int  larceny_minor_version = 1;
-/* char *larceny_version_qualifier = " \"Goldie\""; */
-char *larceny_version_qualifier = "a2";
+int  larceny_minor_version = 3;
+/* char *larceny_version_qualifier = " \"Grain Alcohol and Rainwater\""; */
+char *larceny_version_qualifier = ".1a2";
 
 char *date = DATE " " TIME;
 char *user = USER;

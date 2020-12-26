@@ -57,7 +57,8 @@
                (expt 2.0 k))
               ((> k 0)
                (loop p (* q (expt 2 k)) k))
-              ((< k (- flonum:minexponent n))
+              ;; subtracting n twice allows for denormalized results
+              ((< k (- flonum:minexponent n n))
                0.0)
               (else
                (loop (* p (expt 2 (- k))) q k)))))
@@ -169,6 +170,12 @@
 		(truncate (/ (real-part a) (real-part b)))) ; Could be (/ a b)
 	       (else
 		(contagion a b quotient))))
+        ((and (eq? 'extremely (larceny:r7strict))
+              (real? a)
+              (real? b)
+              (= a (round a))
+              (= b (round b)))
+         (truncate (/ a b)))
 	(else
 	 (error "quotient: arguments must be integers: " a " " b)
 	 #t)))
@@ -178,6 +185,12 @@
 	 (bignum-remainder a b))
 	((and (integer? a) (integer? b))
 	 (- a (* (quotient a b) b)))
+        ((and (eq? 'extremely (larceny:r7strict))
+              (real? a)
+              (real? b)
+              (= a (round a))
+              (= b (round b)))
+         (- a (* (quotient a b) b)))
 	(else
 	 (error "remainder: arguments must be integers: " a " " b)
 	 #t)))
